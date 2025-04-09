@@ -1,3 +1,4 @@
+use ark_ff::{BigInteger, PrimeField};
 use crate::{
     error::Error,
     partial_tree::PartialTree,
@@ -47,10 +48,13 @@ use core::convert::TryFrom;
 /// [`Hasher`]: crate::Hasher
 /// [`algorithms::Sha256`]: crate::algorithms::Sha256
 pub struct MerkleProof<T: Hasher> {
+    // proof_hashes: Vec<T::Hash>,
     proof_hashes: Vec<T::Hash>,
 }
 
-impl<T: Hasher> MerkleProof<T> {
+impl<T: Hasher> MerkleProof<T> where 
+    T::Hash: PrimeField,
+{
     pub fn new(proof_hashes: Vec<T::Hash>) -> Self {
         MerkleProof { proof_hashes }
     }
@@ -291,7 +295,8 @@ impl<T: Hasher> MerkleProof<T> {
         total_leaves_count: usize,
     ) -> Result<String, Error> {
         let root = self.root(leaf_indices, leaf_hashes, total_leaves_count)?;
-        Ok(utils::collections::to_hex_string(&root))
+        let root_bytes = root.into_bigint().to_bytes_be();
+        Ok(utils::collections::to_hex_string(&root_bytes))
     }
 
     /// Returns all hashes from the proof, sorted from the left to right,
@@ -359,12 +364,14 @@ impl<T: Hasher> MerkleProof<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn proof_hashes_hex(&self) -> Vec<String> {
-        self.proof_hashes
-            .iter()
-            .map(utils::collections::to_hex_string)
-            .collect()
-    }
+    /// 
+    // NOTE: COMMENTED OUT BECAUSE NEVER USED!!!
+    // pub fn proof_hashes_hex(&self) -> Vec<String> {
+    //     self.proof_hashes
+    //         .iter()
+    //         .map(utils::collections::to_hex_string)
+    //         .collect()
+    // }
 
     /// Serializes proof hashes to a flat vector of bytes, from left to right, bottom to top.
     /// Usually used to pass the proof to the client after extracting it from the tree.
@@ -458,7 +465,9 @@ impl<T: Hasher> MerkleProof<T> {
     }
 }
 
-impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
+impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> where 
+    T::Hash: PrimeField,
+{
     type Error = Error;
 
     /// Parses proof serialized to a collection of bytes. Consumes passed vector.
@@ -480,12 +489,15 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
     ///
     /// let proof_result = MerkleProof::<Sha256>::try_from(proof_bytes);
     /// ```
+    /// 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         MerkleProof::from_bytes(&bytes)
     }
 }
 
-impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
+impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> 
+    where T::Hash: PrimeField,
+{
     type Error = Error;
 
     /// Parses proof serialized to a collection of bytes

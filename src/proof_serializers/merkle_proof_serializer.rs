@@ -1,3 +1,4 @@
+use ark_ff::{BigInteger, PrimeField};
 use crate::{prelude::*, Error, Hasher, MerkleProof};
 
 /// Trait representing a Merkle proof serializer. Used in [`MerkleProof::serialize`] and
@@ -9,8 +10,11 @@ use crate::{prelude::*, Error, Hasher, MerkleProof};
 /// [`proof_serializers`]: crate::proof_serializers
 pub trait MerkleProofSerializer {
     /// Serialize data from [`MerkleProof`] into a binary
-    fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8>;
+    // fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8>;
+    fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8> where 
+    T::Hash: PrimeField;
 
     /// Deserialize data produced by [`MerkleProofSerializer::serialize`] back into [`MerkleProof`]
-    fn deserialize<T: Hasher>(bytes: &[u8]) -> Result<MerkleProof<T>, Error>;
+    fn deserialize<T: Hasher>(bytes: &[u8]) -> Result<MerkleProof<T>, Error> where 
+    T::Hash: PrimeField;
 }

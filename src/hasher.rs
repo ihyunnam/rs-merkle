@@ -1,3 +1,4 @@
+use ark_ff::{BigInteger, PrimeField};
 use ark_bn254::Fr;
 use crate::prelude::*;
 use core::convert::TryFrom;
@@ -41,12 +42,13 @@ pub trait Hasher: Clone {
     /// `Into<Vec<u8>>` is required to be able to serialize proof
     /// `TryFrom<Vec<u8>>` is required to parse hashes from a serialized proof
     // type Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
-    type Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
+    // type Hash: Clone + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
+    type Hash: Clone + PartialEq;
 
     /// This associated function takes a slice of bytes and returns a hash of it.
     /// Used by `concat_and_hash` function to build a tree from concatenated hashes
-    fn hash(data: &[u8]) -> Self::Hash;
-    // fn hash<const N: usize>(data: &[Fr;N]) -> Self::Hash;
+    // fn hash(data: &[u8]) -> Self::Hash;
+    fn hash<const N: usize>(data: [Self::Hash;N]) -> Self::Hash;
 
     /// Used by [`MerkleTree`] and [`PartialTree`] when calculating the root.
     /// The provided default implementation propagates the left node if it doesn't
@@ -59,16 +61,19 @@ pub trait Hasher: Clone {
     ///
     /// [`MerkleTree`]: crate::MerkleTree
     /// [`PartialTree`]: crate::PartialTree
-    fn concat_and_hash(left: &Self::Hash, right: Option<&Self::Hash>) -> Self::Hash {
-        let mut concatenated: Vec<u8> = (*left).into();
+    /// 
+    // Note: &Self::Hash for left and right hard coded to Fr
+    fn concat_and_hash(left: Self::Hash, right: Option<Self::Hash>) -> Self::Hash {
+        // let mut concatenated: Vec<u8> = (*left).into();
+        // let mut concatenated: Vec<u8> = (left).into_bigint().to_bytes_be();
 
         match right {
             Some(right_node) => {
-                let mut right_node_clone: Vec<u8> = (*right_node).into();
-                concatenated.append(&mut right_node_clone);
-                Self::hash(&concatenated)
+                // let mut right_node_clone: Vec<u8> = (right_node).into_bigint().to_bytes_be();
+                // concatenated.append(&mut right_node_clone);
+                Self::hash([left, right_node])
             }
-            None => *left,
+            None => left,
         }
     }
 

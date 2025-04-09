@@ -1,3 +1,5 @@
+use ark_ff::{BigInteger, PrimeField};
+
 use crate::{prelude::*, Error, Hasher, MerkleProof, MerkleProofSerializer};
 use core::convert::TryFrom;
 
@@ -6,17 +8,21 @@ use core::convert::TryFrom;
 pub struct DirectHashesOrder {}
 
 impl MerkleProofSerializer for DirectHashesOrder {
-    fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8> {
+    fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8> 
+        where T::Hash: PrimeField
+    {
         let mut vectors: Vec<Vec<u8>> = proof
             .proof_hashes()
             .iter()
             .cloned()
-            .map(|hash| hash.into())
+            .map(|hash| hash.into_bigint().to_bytes_be())
             .collect();
         vectors.drain(..).flatten().collect()
     }
 
-    fn deserialize<T: Hasher>(bytes: &[u8]) -> Result<MerkleProof<T>, Error> {
+    fn deserialize<T: Hasher>(bytes: &[u8]) -> Result<MerkleProof<T>, Error> 
+        where T::Hash: PrimeField
+    {
         let hash_size = T::hash_size();
 
         if bytes.len() % hash_size != 0 {
@@ -32,11 +38,12 @@ impl MerkleProofSerializer for DirectHashesOrder {
             let slice = bytes
                 .get(slice_start..slice_end)
                 .ok_or_else(Error::vec_to_hash_conversion_error)?;
-            let vec = Vec::from(slice);
-            match T::Hash::try_from(vec) {
-                Ok(val) => proof_hashes_slices.push(val),
-                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
-            }
+            // let vec = Vec::from(slice);
+            // match T::Hash::try_from(vec) {
+            //     Ok(val) => proof_hashes_slices.push(val),
+            //     Err(_) => return Err(Error::vec_to_hash_conversion_error()),
+            // }
+            proof_hashes_slices.push(T::Hash::from_be_bytes_mod_order(slice));
         }
 
         Ok(MerkleProof::new(proof_hashes_slices))

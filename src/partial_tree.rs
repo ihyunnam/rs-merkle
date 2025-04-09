@@ -82,7 +82,7 @@ impl<T: Hasher> PartialTree<T> {
                     // Populate `current_layer` back for the next iteration
                     Some(left_node) => current_layer.push((
                         *parent_node_index,
-                        T::concat_and_hash(left_node, nodes.get(i * 2 + 1)),
+                        T::concat_and_hash(left_node.clone(), nodes.get(i * 2 + 1).cloned()),
                     )),
                     None => return Err(Error::not_enough_helper_nodes()),
                 }

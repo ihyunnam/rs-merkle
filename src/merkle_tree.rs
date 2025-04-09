@@ -1,3 +1,4 @@
+use ark_ff::{BigInteger, PrimeField};
 use crate::prelude::*;
 use crate::{partial_tree::PartialTree, utils, utils::indices, Hasher, MerkleProof};
 
@@ -18,11 +19,26 @@ pub struct MerkleTree<T: Hasher> {
 
 impl<T: Hasher> Default for MerkleTree<T> {
     fn default() -> Self {
-        Self::new()
+        // Self::new()
+        MerkleTree {
+            current_working_tree: PartialTree::new(), // assumes PartialTree also has a `new()`
+            history: vec![],
+            uncommitted_leaves: vec![],
+        }
     }
 }
 
-impl<T: Hasher> MerkleTree<T> {
+impl<T: Hasher> MerkleTree<T> where
+    T::Hash: PrimeField,
+{
+    // pub fn new() -> Self {
+    //     MerkleTree {
+    //         current_working_tree: PartialTree::new(), // assumes PartialTree also has a `new()`
+    //         history: vec![],
+    //         uncommitted_leaves: vec![],
+    //     }
+    // }
+
     /// Creates a new instance of Merkle Tree. Requires a hash algorithm to be specified.
     ///
     /// # Examples
@@ -93,7 +109,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     /// ```
     pub fn root(&self) -> Option<T::Hash> {
-        Some(self.layer_tuples().last()?.first()?.1)
+        Some(self.layer_tuples().last()?.first()?.1.clone())    // NOTE: clone() added for Fr Hash type
     }
 
     /// Similar to [`MerkleTree::root`], but returns a hex encoded string instead of
@@ -123,7 +139,8 @@ impl<T: Hasher> MerkleTree<T> {
     /// ```
     pub fn root_hex(&self) -> Option<String> {
         let root = self.root()?;
-        Some(utils::collections::to_hex_string(&root))
+        let root_bytes = root.into_bigint().to_bytes_be();
+        Some(utils::collections::to_hex_string(&root_bytes))
     }
 
     /// Returns helper nodes required to build a partial tree for the given indices
@@ -404,7 +421,8 @@ impl<T: Hasher> MerkleTree<T> {
     /// ```
     pub fn uncommitted_root_hex(&self) -> Option<String> {
         let root = self.uncommitted_root()?;
-        Some(utils::collections::to_hex_string(&root))
+        let root_bytes = root.into_bigint().to_bytes_be();
+        Some(utils::collections::to_hex_string(&root_bytes))
     }
 
     /// Clears all uncommitted changes made by [`MerkleTree::insert`] and [`MerkleTree::append`]
