@@ -1,3 +1,4 @@
+use ark_bn254::Fr;
 use crate::prelude::*;
 use core::convert::TryFrom;
 use core::mem;
@@ -39,11 +40,13 @@ pub trait Hasher: Clone {
     /// `PartialEq` is required to compare equality when verifying proof
     /// `Into<Vec<u8>>` is required to be able to serialize proof
     /// `TryFrom<Vec<u8>>` is required to parse hashes from a serialized proof
+    // type Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
     type Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
 
     /// This associated function takes a slice of bytes and returns a hash of it.
     /// Used by `concat_and_hash` function to build a tree from concatenated hashes
     fn hash(data: &[u8]) -> Self::Hash;
+    // fn hash<const N: usize>(data: &[Fr;N]) -> Self::Hash;
 
     /// Used by [`MerkleTree`] and [`PartialTree`] when calculating the root.
     /// The provided default implementation propagates the left node if it doesn't

@@ -250,7 +250,7 @@ impl<T: Hasher> MerkleProof<T> {
         let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth)?;
 
         match partial_tree.root() {
-            Some(root) => Ok(*root),
+            Some(root) => Ok(root.clone()),
             None => Err(Error::not_enough_hashes_to_calculate_root()),
         }
     }
